@@ -1,16 +1,16 @@
-# Robotic Agents — Telegram Scout
+# Robotic Agents — UGV Beast Telegram Controller
 
-Control a Unitree GO2 robot dog via Telegram using natural language. Send a mission like *"explore the room and tell me what you see"* — the robot rotates through 360°, captures camera frames, and replies with a description of what it sees.
+Control a UGV Beast ground vehicle via Telegram using natural language. Uses keyboard-style teleoperation and joint control via the Cyberwave digital twin platform.
 
 ```
-Telegram → OpenClaw + Codex → robot_controller.py → Cyberwave SDK → Unitree GO2
+Telegram → OpenClaw + Codex → robot_controller.py → Cyberwave SDK → UGV Beast
 ```
 
 ## Prerequisites
 
 - macOS (setup script uses launchd)
 - Python 3.10+ (miniconda recommended)
-- [Cyberwave](https://cyberwave.com) account with a GO2 digital twin
+- [Cyberwave](https://cyberwave.com) account with a UGV Beast digital twin
 - [Telegram bot token](https://core.telegram.org/bots#botfather) from BotFather
 - [OpenAI Codex](https://openai.com) account (OAuth login, no API key needed)
 
@@ -33,7 +33,8 @@ Edit `.env` and fill in your credentials:
 
 ```
 CYBERWAVE_API_KEY=your_cyberwave_api_key
-CYBERWAVE_TWIN_ID=your-twin-uuid          # find this in the Cyberwave dashboard
+CYBERWAVE_TWIN_ID=your-twin-uuid              # find in the Cyberwave dashboard
+CYBERWAVE_ENVIRONMENT_ID=your-environment-uuid
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 ```
 
@@ -54,15 +55,13 @@ This will:
 
 ## Verify it works
 
-Check robot connectivity:
-
 ```bash
-source .env && python3 robot_controller.py status
+source .env && ./robot_controller.py status
 ```
 
 Expected output:
 ```json
-{"status": "connected", "twin": "<your-twin-id>", "can_locomote": true, ...}
+{"status": "connected", "twin": "<your-twin-id>", "environment": "<env-id>", ...}
 ```
 
 Check OpenClaw is running:
@@ -79,12 +78,12 @@ Message your Telegram bot:
 
 | Message | What happens |
 |---------|-------------|
-| `check robot status` | Reports connection state |
-| `stand up` | GO2 stands |
-| `sit` | GO2 sits |
-| `move forward 1 meter` | GO2 moves forward |
-| `rotate 90 degrees` | GO2 turns 90° |
-| `explore the room and tell me what you see` | Full 360° scan with camera + description |
+| `check robot status` | Reports connection state and joint list |
+| `drive forward 1 meter` | UGV moves forward |
+| `turn left` | UGV rotates left |
+| `stop` | UGV stops immediately |
+| `set joint arm_joint_1 to 45 degrees` | Individual joint control |
+| `explore the area and tell me what you see` | 360° camera sweep with description |
 
 ## Architecture
 
@@ -100,24 +99,20 @@ experiment_design.md         — Experiment plan and success criteria
 
 ```
 status
-pose <name>              stand | sit | liedown | stretch
-gait <mode>              walk | trot | run
-move <x> <y> <z>         absolute position (meters)
-move_vel <vx> <vy> <vyaw> <duration>
-rotate <yaw>             0–360 degrees
-height <meters>          body height
-joint <joint_id> <deg>   individual joint control
-capture [path]           save camera frame to JPEG
-reset                    return to origin
+move_vel <vx> <vy> <vyaw> <duration>   velocity teleop (m/s, rad/s, seconds)
+stop                                    emergency stop
+joint <joint_id> <degrees>             individual joint control
+capture [path]                         save camera frame to JPEG
+reset                                  return to origin
 ```
 
 ## Troubleshooting
 
 **`ModuleNotFoundError: No module named 'cyberwave'`**
-The daemon is using the wrong Python. Run `setup.sh` again — it injects the correct Python path into the daemon environment.
+The daemon is using the wrong Python. Run `setup.sh` — it injects the correct Python path into the daemon environment.
 
-**`can_locomote: false` in status**
-The twin UUID in `.env` may not be a GO2 locomotion twin. Check the Cyberwave dashboard and confirm the twin type.
+**Shell commands blocked in webchat**
+`tools.elevated` must be enabled. Run `setup.sh` to configure this automatically.
 
 **Telegram: not configured in `openclaw status`**
 Re-run `setup.sh` to re-inject the bot token.
