@@ -8,6 +8,7 @@ description: Unitree GO2 robot control via Cyberwave. Activate when user mention
 Control the Unitree GO2 quadruped robot ("Unitree Go2 (9b4a8188...)") via Cyberwave digital twin.
 
 **Controller:** `$HOME/PetProjects/robotics-hackathon/robot_controller.py`
+**Python:** use `$PYTHON3` env var (set by setup.sh to the Python 3.10+ interpreter with cyberwave installed; falls back to `python3`)
 **Required env:** `CYBERWAVE_TWIN_ID`
 
 All commands return JSON. Always confirm actions in plain English.
@@ -18,22 +19,22 @@ All commands return JSON. Always confirm actions in plain English.
 
 ### Status
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py status
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py status
 ```
 
 ### Move to absolute position (meters)
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py move <x> <y> <z>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py move <x> <y> <z>
 ```
 
 ### Rotate (yaw in degrees, 0–360)
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py rotate <yaw>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py rotate <yaw>
 ```
 
 ### Move at velocity
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vyaw> <duration_seconds>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vyaw> <duration_seconds>
 ```
 - `vx`: forward/backward (m/s), positive = forward
 - `vy`: left/right (m/s), positive = left
@@ -41,35 +42,35 @@ python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <
 
 ### Set gait
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py gait <mode>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py gait <mode>
 ```
 Modes: `walk`, `trot`, `run`
 
 ### Set pose
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py pose <name>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py pose <name>
 ```
 Poses: `stand`, `sit`, `liedown`, `stretch`
 
 ### Body height (meters, e.g. 0.25–0.40)
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py height <meters>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py height <meters>
 ```
 
 ### Set joint angle
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py joint <joint_id> <degrees>
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py joint <joint_id> <degrees>
 ```
 
 ### Capture camera frame
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py capture
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py capture
 ```
 Returns `{"ok": true, "path": "/tmp/go2_frame_<timestamp>.jpg"}`. Read the image at that path to see what the robot sees.
 
 ### Reset to default position
 ```
-python3 $HOME/PetProjects/robotics-hackathon/robot_controller.py reset
+${PYTHON3:-python3} $HOME/PetProjects/robotics-hackathon/robot_controller.py reset
 ```
 
 ---

@@ -64,6 +64,8 @@ else
     /usr/libexec/PlistBuddy -c "Set :EnvironmentVariables:$1 $2" "$PLIST" 2>/dev/null \
       || /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables:$1 string $2" "$PLIST"
   }
+  PYTHON3=$(which python3)
+  plist_set PYTHON3 "$PYTHON3"
   plist_set TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
   plist_set CYBERWAVE_TWIN_ID "$CYBERWAVE_TWIN_ID"
   plist_set CYBERWAVE_API_KEY "$CYBERWAVE_API_KEY"

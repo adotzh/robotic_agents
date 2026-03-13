@@ -32,9 +32,13 @@ def get_robot():
 
 def cmd_status():
     robot = get_robot()
+    caps = robot.capabilities
     result = {
         "status": "connected",
         "twin": os.environ.get("CYBERWAVE_TWIN_ID"),
+        "can_locomote": caps.get("can_locomote"),
+        "has_legs": caps.get("has_legs"),
+        "locomotion_mode": caps.get("locomotion_mode"),
     }
     print(json.dumps(result))
 
@@ -53,7 +57,7 @@ def cmd_rotate(yaw):
 
 def cmd_joint(joint_id, degrees):
     robot = get_robot()
-    robot.joints.set(str(joint_id), float(degrees))
+    robot.controller.joints.set(str(joint_id), float(degrees))
     print(json.dumps({"ok": True, "action": "joint", "joint": joint_id, "degrees": degrees}))
 
 
@@ -66,25 +70,25 @@ def cmd_reset():
 
 def cmd_pose(name):
     robot = get_robot()
-    robot.sport.pose(name)
+    robot.motion.pose(name)
     print(json.dumps({"ok": True, "action": "pose", "pose": name}))
 
 
 def cmd_gait(mode):
     robot = get_robot()
-    robot.sport.gait(mode)
+    robot.motion.animation(mode)
     print(json.dumps({"ok": True, "action": "gait", "mode": mode}))
 
 
 def cmd_move_vel(vx, vy, vyaw, duration):
     robot = get_robot()
-    robot.sport.move(vx=float(vx), vy=float(vy), vyaw=float(vyaw), duration=float(duration))
+    robot.navigation.follow_path([{"vx": float(vx), "vy": float(vy), "vyaw": float(vyaw)}], wait_s=float(duration))
     print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
 
 
 def cmd_height(meters):
     robot = get_robot()
-    robot.sport.body_height(float(meters))
+    robot.edit_position(z=float(meters))
     print(json.dumps({"ok": True, "action": "height", "meters": meters}))
 
 
