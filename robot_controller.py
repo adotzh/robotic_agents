@@ -30,12 +30,17 @@ def get_robot():
     return cw.twin(twin_id)
 
 
+def get_env_id():
+    return os.environ.get("CYBERWAVE_ENVIRONMENT_ID")
+
+
 def cmd_status():
     robot = get_robot()
     caps = robot.capabilities
     result = {
         "status": "connected",
         "twin": os.environ.get("CYBERWAVE_TWIN_ID"),
+        "environment": get_env_id(),
         "can_locomote": caps.get("can_locomote"),
         "has_legs": caps.get("has_legs"),
         "locomotion_mode": caps.get("locomotion_mode"),
@@ -70,19 +75,23 @@ def cmd_reset():
 
 def cmd_pose(name):
     robot = get_robot()
-    robot.motion.pose(name)
+    robot.motion.pose(name, environment_uuid=get_env_id())
     print(json.dumps({"ok": True, "action": "pose", "pose": name}))
 
 
 def cmd_gait(mode):
     robot = get_robot()
-    robot.motion.animation(mode)
+    robot.motion.animation(mode, environment_uuid=get_env_id())
     print(json.dumps({"ok": True, "action": "gait", "mode": mode}))
 
 
 def cmd_move_vel(vx, vy, vyaw, duration):
     robot = get_robot()
-    robot.navigation.follow_path([{"vx": float(vx), "vy": float(vy), "vyaw": float(vyaw)}], wait_s=float(duration))
+    robot.navigation.follow_path(
+        [{"vx": float(vx), "vy": float(vy), "vyaw": float(vyaw)}],
+        wait_s=float(duration),
+        environment_uuid=get_env_id(),
+    )
     print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
 
 

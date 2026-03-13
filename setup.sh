@@ -13,7 +13,7 @@ else
 fi
 
 # Validate required env vars
-for var in TELEGRAM_BOT_TOKEN CYBERWAVE_TWIN_ID CYBERWAVE_API_KEY; do
+for var in TELEGRAM_BOT_TOKEN CYBERWAVE_TWIN_ID CYBERWAVE_API_KEY CYBERWAVE_ENVIRONMENT_ID; do
   if [ -z "${!var}" ]; then
     echo "⚠ $var is not set in .env — aborting."
     exit 1
@@ -83,6 +83,7 @@ else
   plist_set TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
   plist_set CYBERWAVE_TWIN_ID "$CYBERWAVE_TWIN_ID"
   plist_set CYBERWAVE_API_KEY "$CYBERWAVE_API_KEY"
+  plist_set CYBERWAVE_ENVIRONMENT_ID "$CYBERWAVE_ENVIRONMENT_ID"
   echo "✓ Env vars injected into $PLIST"
 
   echo ""
