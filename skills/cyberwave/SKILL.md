@@ -12,6 +12,8 @@ Control the Unitree GO2 quadruped robot ("Unitree Go2 (9b4a8188...)") via Cyberw
 
 All commands return JSON. Always confirm actions in plain English.
 
+> **IMPORTANT:** Do NOT check or probe for Python versions. Do NOT run `python3 --version` or any Python diagnostics. `run_robot.sh` handles Python selection internally. Just run the commands below directly.
+
 ---
 
 ## Commands
