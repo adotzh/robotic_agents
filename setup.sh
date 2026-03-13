@@ -76,6 +76,21 @@ else
   echo "✓ Daemon reloaded"
 fi
 
+# 6. Configure Telegram channel via openclaw config
+echo ""
+echo "--- Configuring Telegram channel ---"
+openclaw config set channels.telegram.enabled true
+openclaw config set channels.telegram.botToken "$TELEGRAM_BOT_TOKEN"
+openclaw config set channels.telegram.dmPolicy pairing
+openclaw config set channels.telegram.groupPolicy open
+echo "✓ Telegram configured"
+
+# 7. Disable memory search (no embedding provider)
+echo ""
+echo "--- Disabling memory search (no embedding provider configured) ---"
+openclaw config set agents.defaults.memorySearch.enabled false
+echo "✓ Memory search disabled"
+
 echo ""
 echo "=== Setup complete! ==="
 echo ""
