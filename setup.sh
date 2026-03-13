@@ -73,6 +73,12 @@ else
       || /usr/libexec/PlistBuddy -c "Add :EnvironmentVariables:$1 string $2" "$PLIST"
   }
   PYTHON3=$(which python3)
+  PYTHON3_DIR=$(dirname "$PYTHON3")
+  CURRENT_PATH=$(/usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:PATH" "$PLIST" 2>/dev/null || echo "")
+  if [ -n "$CURRENT_PATH" ] && [[ "$CURRENT_PATH" != *"$PYTHON3_DIR"* ]]; then
+    /usr/libexec/PlistBuddy -c "Set :EnvironmentVariables:PATH $PYTHON3_DIR:$CURRENT_PATH" "$PLIST"
+    echo "✓ Prepended $PYTHON3_DIR to daemon PATH"
+  fi
   plist_set PYTHON3 "$PYTHON3"
   plist_set TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
   plist_set CYBERWAVE_TWIN_ID "$CYBERWAVE_TWIN_ID"
