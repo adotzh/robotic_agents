@@ -35,7 +35,7 @@ if [ "$(python3 -c 'import sys; print(sys.version_info.major)')" -lt 3 ] || [ "$
   echo "⚠ python3 is $(python3 --version) — need 3.10+. Install via miniconda or pyenv first."
   exit 1
 fi
-pip install cyberwave
+pip install "cyberwave[camera]"
 python3 -c "import cyberwave" || { echo "⚠ cyberwave failed to import — check Python environment."; exit 1; }
 echo "✓ cyberwave installed and importable with $(python3 --version)"
 

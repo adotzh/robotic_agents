@@ -39,11 +39,11 @@ $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vya
 $HOME/PetProjects/robotics-hackathon/robot_controller.py stop
 ```
 
-### Joint control
+### Joint control (camera pan-tilt servos)
 ```
 $HOME/PetProjects/robotics-hackathon/robot_controller.py joint <joint_id> <degrees>
 ```
-Use `status` to get the list of controllable joint names.
+Joint IDs are numbers: `1` = pan (left/right), `2` = tilt (up/down). Example: `joint 1 30` pans camera 30°.
 
 ### Capture camera frame
 ```

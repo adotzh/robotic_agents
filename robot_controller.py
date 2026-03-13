@@ -62,7 +62,7 @@ def cmd_stop():
 
 def cmd_joint(joint_id, degrees):
     robot = get_robot()
-    robot.controller.joints.set(str(joint_id), float(degrees))
+    robot.joints.set(str(joint_id), float(degrees))
     print(json.dumps({"ok": True, "action": "joint", "joint": joint_id, "degrees": degrees}))
 
 
