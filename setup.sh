@@ -107,6 +107,14 @@ echo "--- Disabling memory search (no embedding provider configured) ---"
 openclaw config set agents.defaults.memorySearch.enabled false
 echo "✓ Memory search disabled"
 
+# 8. Enable shell execution for webchat and Telegram
+echo ""
+echo "--- Enabling shell tool execution ---"
+openclaw config set tools.elevated.enabled true
+openclaw config set tools.elevated.allowFrom.webchat '["*"]'
+openclaw config set tools.elevated.allowFrom.telegram '["*"]'
+echo "✓ Shell execution enabled for webchat and Telegram"
+
 echo ""
 echo "=== Setup complete! ==="
 echo ""

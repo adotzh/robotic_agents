@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/azhiboedova/miniconda3/bin/python3
 """
 Cyberwave robot controller — called by the OpenClaw skill via shell exec.
 Usage: python robot_controller.py <command> [args...]
