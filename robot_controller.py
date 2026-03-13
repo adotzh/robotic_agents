@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""
+Cyberwave robot controller — called by the OpenClaw skill via shell exec.
+Usage: python robot_controller.py <command> [args...]
+
+Commands:
+  status
+  move <x> <y> <z>
+  rotate <yaw>
+  joint <joint_id> <degrees>
+  reset
+  pose <name>              stand | sit | liedown | stretch
+  gait <mode>              walk | trot | run
+  move_vel <vx> <vy> <vyaw> <duration>
+  height <meters>
+  capture [output_path]
+"""
+
+import sys
+import json
+import os
+import cyberwave as cw
+
+
+def get_robot():
+    twin_id = os.environ.get("CYBERWAVE_TWIN_ID")
+    if not twin_id:
+        print(json.dumps({"error": "CYBERWAVE_TWIN_ID not set"}))
+        sys.exit(1)
+    return cw.twin(twin_id)
+
+
+def cmd_status():
+    robot = get_robot()
+    result = {
+        "status": "connected",
+        "twin": os.environ.get("CYBERWAVE_TWIN_ID"),
+    }
+    print(json.dumps(result))
+
+
+def cmd_move(x, y, z):
+    robot = get_robot()
+    robot.edit_position(x=float(x), y=float(y), z=float(z))
+    print(json.dumps({"ok": True, "action": "move", "x": x, "y": y, "z": z}))
+
+
+def cmd_rotate(yaw):
+    robot = get_robot()
+    robot.edit_rotation(yaw=float(yaw))
+    print(json.dumps({"ok": True, "action": "rotate", "yaw": yaw}))
+
+
+def cmd_joint(joint_id, degrees):
+    robot = get_robot()
+    robot.joints.set(str(joint_id), float(degrees))
+    print(json.dumps({"ok": True, "action": "joint", "joint": joint_id, "degrees": degrees}))
+
+
+def cmd_reset():
+    robot = get_robot()
+    robot.edit_position(x=0.0, y=0.0, z=0.0)
+    robot.edit_rotation(yaw=0)
+    print(json.dumps({"ok": True, "action": "reset"}))
+
+
+def cmd_pose(name):
+    robot = get_robot()
+    robot.sport.pose(name)
+    print(json.dumps({"ok": True, "action": "pose", "pose": name}))
+
+
+def cmd_gait(mode):
+    robot = get_robot()
+    robot.sport.gait(mode)
+    print(json.dumps({"ok": True, "action": "gait", "mode": mode}))
+
+
+def cmd_move_vel(vx, vy, vyaw, duration):
+    robot = get_robot()
+    robot.sport.move(vx=float(vx), vy=float(vy), vyaw=float(vyaw), duration=float(duration))
+    print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
+
+
+def cmd_height(meters):
+    robot = get_robot()
+    robot.sport.body_height(float(meters))
+    print(json.dumps({"ok": True, "action": "height", "meters": meters}))
+
+
+def cmd_capture(output_path=None):
+    robot = get_robot()
+    if not output_path:
+        import tempfile, time
+        output_path = os.path.join(tempfile.gettempdir(), f"go2_frame_{int(time.time())}.jpg")
+    frame = robot.camera.capture()
+    with open(output_path, "wb") as f:
+        f.write(frame)
+    print(json.dumps({"ok": True, "action": "capture", "path": output_path}))
+
+
+COMMANDS = {
+    "status":   (cmd_status,   0),
+    "move":     (cmd_move,     3),
+    "rotate":   (cmd_rotate,   1),
+    "joint":    (cmd_joint,    2),
+    "reset":    (cmd_reset,    0),
+    "pose":     (cmd_pose,     1),
+    "gait":     (cmd_gait,     1),
+    "move_vel": (cmd_move_vel, 4),
+    "height":   (cmd_height,   1),
+    "capture":  (cmd_capture,  None),  # 0 or 1 arg
+}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "No command provided. Available: " + ", ".join(COMMANDS)}))
+        sys.exit(1)
+
+    command = sys.argv[1]
+    args = sys.argv[2:]
+
+    if command not in COMMANDS:
+        print(json.dumps({"error": f"Unknown command '{command}'. Available: {', '.join(COMMANDS)}"}))
+        sys.exit(1)
+
+    fn, expected_args = COMMANDS[command]
+
+    if expected_args is not None and len(args) != expected_args:
+        print(json.dumps({"error": f"'{command}' expects {expected_args} args, got {len(args)}"}))
+        sys.exit(1)
+
+    try:
+        fn(*args)
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+        sys.exit(1)

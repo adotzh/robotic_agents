@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/azhiboedova/.openclaw/**)",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "Bash(ls ~/.openclaw/skills/ && find ~/.openclaw -name \"*.js\" 2>/dev/null | head -20)",
+      "Bash(ls ~/.openclaw/logs/ 2>/dev/null && tail -50 ~/.openclaw/logs/*.log 2>/dev/null | grep -i \"mkdir\\\\|EACCES\\\\|permission\\\\|exec\\\\|skill\" | tail -30)",
+      "Bash(openclaw --help 2>&1 | head -50)",
+      "Bash(openclaw gateway:*)",
+      "Bash(ps -p 53690 -o pid,command)",
+      "Bash(launchctl list:*)",
+      "Bash(find ~/.openclaw -name \"gateway*\" -o -name \"*lock*\" -o -name \"*rate*\" 2>/dev/null | grep -v logs)",
+      "Bash(openclaw --help 2>&1 | grep -i \"uninstall\\\\|remove\\\\|purge\\\\|clean\")",
+      "Bash(openclaw uninstall:*)",
+      "Bash(python3 -c \"import cyberwave\" 2>&1; python3 -m pip show cyberwave 2>&1)",
+      "Bash(ls -la /Users/azhiboedova/PetProjects/robotics-hackathon/.env* 2>&1)",
+      "Bash(source .env && python3 robot_controller.py status 2>&1)",
+      "Bash(set -a && source .env && set +a && python3 robot_controller.py status 2>&1)",
+      "Bash(PLIST=~/Library/LaunchAgents/ai.openclaw.gateway.plist)",
+      "Read(//Users/azhiboedova/PetProjects/robotics-hackathon/**)",
+      "Bash(PLIST=~/Library/LaunchAgents/ai.openclaw.gateway.plist && /usr/libexec/PlistBuddy -c \"Print :EnvironmentVariables\" \"$PLIST\" 2>&1)",
+      "Bash(set -a && source .env && set +a && PLIST=~/Library/LaunchAgents/ai.openclaw.gateway.plist && /usr/libexec/PlistBuddy -c \"Add :EnvironmentVariables:TELEGRAM_BOT_TOKEN string $TELEGRAM_BOT_TOKEN\" \"$PLIST\" && /usr/libexec/PlistBuddy -c \"Add :EnvironmentVariables:CYBERWAVE_TWIN_ID string $CYBERWAVE_TWIN_ID\" \"$PLIST\" && /usr/libexec/PlistBuddy -c \"Add :EnvironmentVariables:CYBERWAVE_API_KEY string $CYBERWAVE_API_KEY\" \"$PLIST\" && echo \"Done\")",
+      "Bash(PLIST=~/Library/LaunchAgents/ai.openclaw.gateway.plist && launchctl unload \"$PLIST\" 2>/dev/null || true && launchctl load \"$PLIST\" && echo \"Daemon reloaded\")",
+      "Bash(git init:*)"
+    ]
+  }
+}
