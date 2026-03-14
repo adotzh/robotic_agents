@@ -34,7 +34,9 @@ def cmd_status():
     caps = robot.capabilities
     result = {
         "status": "connected",
-        "twin": os.environ.get("CYBERWAVE_TWIN_ID"),
+        "twin_key": os.environ.get("CYBERWAVE_TWIN_ID"),
+        "twin_name": robot.name,
+        "twin_uuid": robot.uuid,
         "environment": env_id,
         "can_locomote": caps.get("can_locomote"),
         "locomotion_mode": caps.get("locomotion_mode"),
