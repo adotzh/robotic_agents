@@ -46,20 +46,19 @@ def cmd_status():
 
 
 def cmd_move_vel(vx, vy, vyaw, duration):
-    robot = get_robot()
-    # Convert velocity + duration to a target position waypoint
+    # Convert velocity * duration to a position target and use goto
     t = float(duration)
-    robot.navigation.follow_path(
-        [{"x": float(vx) * t, "y": float(vy) * t, "z": 0.0}],
-        wait_s=t,
-    )
-    print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
+    x = float(vx) * t
+    y = float(vy) * t
+    robot = get_robot()
+    result = robot.navigation.goto([x, y, 0.0])
+    print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration, "nav_status": result.get("status")}))
 
 
 def cmd_move(x, y):
     robot = get_robot()
-    robot.navigation.follow_path([{"x": float(x), "y": float(y), "z": 0.0}])
-    print(json.dumps({"ok": True, "action": "move", "x": x, "y": y}))
+    result = robot.navigation.goto([float(x), float(y), 0.0])
+    print(json.dumps({"ok": True, "action": "move", "x": x, "y": y, "nav_status": result.get("status")}))
 
 
 def cmd_stop():
