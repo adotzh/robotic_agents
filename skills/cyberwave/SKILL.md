@@ -24,6 +24,15 @@ All commands return JSON. Always confirm actions in plain English.
 $HOME/PetProjects/robotics-hackathon/robot_controller.py status
 ```
 
+### Move to position (meters, relative to current position)
+```
+$HOME/PetProjects/robotics-hackathon/robot_controller.py move <x> <y>
+```
+- `x`: forward/backward in meters, positive = forward
+- `y`: left/right in meters, positive = left
+- Example — move forward 1 meter: `move 1.0 0`
+- Example — move right 0.5 meters: `move 0 -0.5`
+
 ### Drive (velocity-based teleop)
 ```
 $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vyaw> <duration_seconds>
@@ -32,7 +41,6 @@ $HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vya
 - `vy`: left/right (m/s), positive = left
 - `vyaw`: rotation rate (rad/s), positive = turn left
 - Example — drive forward 1 m/s for 2 seconds: `move_vel 1.0 0 0 2`
-- Example — turn left: `move_vel 0 0 0.5 2`
 
 ### Stop
 ```

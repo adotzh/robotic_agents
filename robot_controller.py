@@ -45,11 +45,19 @@ def cmd_status():
 
 def cmd_move_vel(vx, vy, vyaw, duration):
     robot = get_robot()
+    # Convert velocity + duration to a target position waypoint
+    t = float(duration)
     robot.navigation.follow_path(
-        [{"vx": float(vx), "vy": float(vy), "vyaw": float(vyaw)}],
-        wait_s=float(duration),
+        [{"x": float(vx) * t, "y": float(vy) * t, "z": 0.0}],
+        wait_s=t,
     )
     print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
+
+
+def cmd_move(x, y):
+    robot = get_robot()
+    robot.navigation.follow_path([{"x": float(x), "y": float(y), "z": 0.0}])
+    print(json.dumps({"ok": True, "action": "move", "x": x, "y": y}))
 
 
 def cmd_stop():
@@ -84,6 +92,7 @@ def cmd_reset():
 
 COMMANDS = {
     "status":   (cmd_status,   0),
+    "move":     (cmd_move,     2),
     "move_vel": (cmd_move_vel, 4),
     "stop":     (cmd_stop,     0),
     "joint":    (cmd_joint,    2),
