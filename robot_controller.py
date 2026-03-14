@@ -23,20 +23,19 @@ def get_robot():
     if not twin_id:
         print(json.dumps({"error": "CYBERWAVE_TWIN_ID not set"}))
         sys.exit(1)
-    return cw.twin(twin_id)
+    env_id = os.environ.pop("CYBERWAVE_ENVIRONMENT_ID", None)
+    return cw.twin(twin_id, environment=env_id)
 
-
-def get_env_id():
-    return os.environ.get("CYBERWAVE_ENVIRONMENT_ID")
 
 
 def cmd_status():
+    env_id = os.environ.get("CYBERWAVE_ENVIRONMENT_ID")
     robot = get_robot()
     caps = robot.capabilities
     result = {
         "status": "connected",
         "twin": os.environ.get("CYBERWAVE_TWIN_ID"),
-        "environment": get_env_id(),
+        "environment": env_id,
         "can_locomote": caps.get("can_locomote"),
         "locomotion_mode": caps.get("locomotion_mode"),
         "joints": robot.get_controllable_joint_names(),
@@ -49,14 +48,13 @@ def cmd_move_vel(vx, vy, vyaw, duration):
     robot.navigation.follow_path(
         [{"vx": float(vx), "vy": float(vy), "vyaw": float(vyaw)}],
         wait_s=float(duration),
-        environment_uuid=get_env_id(),
     )
     print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration}))
 
 
 def cmd_stop():
     robot = get_robot()
-    robot.navigation.stop(environment_uuid=get_env_id())
+    robot.navigation.stop()
     print(json.dumps({"ok": True, "action": "stop"}))
 
 

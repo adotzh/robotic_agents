@@ -2,6 +2,11 @@
 # Wrapper for robot_controller.py — finds Python 3.10+ automatically.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Load and export .env if present
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  set -a && source "$SCRIPT_DIR/.env" && set +a
+fi
+
 for py in \
   "$PYTHON3" \
   "$HOME/miniconda3/bin/python3" \
