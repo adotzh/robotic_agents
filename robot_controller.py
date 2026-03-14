@@ -1,21 +1,54 @@
 #!/Users/azhiboedova/miniconda3/bin/python3
 """
 Cyberwave UGV Beast controller — called by the OpenClaw skill via shell exec.
-Usage: python robot_controller.py <command> [args...]
+Robot runs ROS2 on Raspberry Pi at ROBOT_HOST. Commands are sent via SSH.
+
+Usage: ./robot_controller.py <command> [args...]
 
 Commands:
   status
-  move_vel <vx> <vy> <vyaw> <duration>
+  move <vx> <vyaw> <duration>   drive forward/turn (m/s, rad/s, seconds)
   stop
-  joint <joint_id> <degrees>
+  joint <joint_name> <degrees>  camera pan-tilt control
   capture [output_path]
-  reset
+  ros2 <ros2_command...>        run any ros2 command on the robot Pi
 """
 
 import sys
 import json
 import os
+import subprocess
 import cyberwave as cw
+
+
+ROBOT_HOST = os.environ.get("ROBOT_HOST", "172.20.10.2")
+ROBOT_USER = os.environ.get("ROBOT_USER", "ws")
+ROBOT_PORT = os.environ.get("ROBOT_PORT", "22")
+DOCKER_CONTAINER = os.environ.get("ROBOT_DOCKER_CONTAINER", "cyberwave-driver-f15d8ba2")
+
+
+def ssh(cmd, timeout=10):
+    """Run a command on the robot Pi via SSH. Returns (stdout, stderr, returncode)."""
+    full_cmd = [
+        "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5",
+        "-p", ROBOT_PORT, f"{ROBOT_USER}@{ROBOT_HOST}", cmd
+    ]
+    result = subprocess.run(full_cmd, capture_output=True, text=True, timeout=timeout)
+    return result.stdout.strip(), result.stderr.strip(), result.returncode
+
+
+def ros2_pub_cmd_vel(vx=0.0, vyaw=0.0, duration=1.0):
+    """Publish cmd_vel to the robot for a given duration, then stop."""
+    twist = f"{{linear: {{x: {vx}, y: 0.0, z: 0.0}}, angular: {{x: 0.0, y: 0.0, z: {vyaw}}}}}"
+    move_cmd = f"cd /home/ws/ugv_ws && source install/setup.bash && ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"{twist}\""
+    stop_cmd = "cd /home/ws/ugv_ws && source install/setup.bash && ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}\""
+
+    # Send move command repeatedly for duration seconds
+    import time
+    deadline = time.time() + float(duration)
+    while time.time() < deadline:
+        ssh(move_cmd, timeout=5)
+    ssh(stop_cmd, timeout=5)
 
 
 def get_robot():
@@ -27,11 +60,18 @@ def get_robot():
     return cw.twin(twin_id, environment=env_id)
 
 
-
 def cmd_status():
     env_id = os.environ.get("CYBERWAVE_ENVIRONMENT_ID")
     robot = get_robot()
     caps = robot.capabilities
+
+    # Also check SSH connectivity
+    try:
+        _, _, rc = ssh("echo ok", timeout=3)
+        ssh_ok = rc == 0
+    except Exception:
+        ssh_ok = False
+
     result = {
         "status": "connected",
         "twin_key": os.environ.get("CYBERWAVE_TWIN_ID"),
@@ -41,36 +81,28 @@ def cmd_status():
         "can_locomote": caps.get("can_locomote"),
         "locomotion_mode": caps.get("locomotion_mode"),
         "joints": robot.get_controllable_joint_names(),
+        "robot_ssh": f"{ROBOT_USER}@{ROBOT_HOST}:{ROBOT_PORT}",
+        "robot_ssh_reachable": ssh_ok,
     }
     print(json.dumps(result))
 
 
-def cmd_move_vel(vx, vy, vyaw, duration):
-    # Convert velocity * duration to a position target and use goto
-    t = float(duration)
-    x = float(vx) * t
-    y = float(vy) * t
-    robot = get_robot()
-    result = robot.navigation.goto([x, y, 0.0])
-    print(json.dumps({"ok": True, "action": "move_vel", "vx": vx, "vy": vy, "vyaw": vyaw, "duration": duration, "nav_status": result.get("status")}))
-
-
-def cmd_move(x, y):
-    robot = get_robot()
-    result = robot.navigation.goto([float(x), float(y), 0.0])
-    print(json.dumps({"ok": True, "action": "move", "x": x, "y": y, "nav_status": result.get("status")}))
+def cmd_move(vx, vyaw, duration):
+    """Drive robot: vx m/s forward, vyaw rad/s rotation, for duration seconds."""
+    ros2_pub_cmd_vel(float(vx), float(vyaw), float(duration))
+    print(json.dumps({"ok": True, "action": "move", "vx": vx, "vyaw": vyaw, "duration": duration}))
 
 
 def cmd_stop():
-    robot = get_robot()
-    robot.navigation.stop()
+    ssh("cd /home/ws/ugv_ws && source install/setup.bash && ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \"{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}\"", timeout=5)
     print(json.dumps({"ok": True, "action": "stop"}))
 
 
-def cmd_joint(joint_id, degrees):
+def cmd_joint(joint_name, degrees):
+    """Control camera pan-tilt joints via Cyberwave SDK."""
     robot = get_robot()
-    robot.joints.set(str(joint_id), float(degrees))
-    print(json.dumps({"ok": True, "action": "joint", "joint": joint_id, "degrees": degrees}))
+    robot.joints.set(str(joint_name), float(degrees))
+    print(json.dumps({"ok": True, "action": "joint", "joint": joint_name, "degrees": degrees}))
 
 
 def cmd_capture(output_path=None):
@@ -84,21 +116,21 @@ def cmd_capture(output_path=None):
     print(json.dumps({"ok": True, "action": "capture", "path": output_path}))
 
 
-def cmd_reset():
-    robot = get_robot()
-    robot.edit_position(x=0.0, y=0.0, z=0.0)
-    robot.edit_rotation(yaw=0)
-    print(json.dumps({"ok": True, "action": "reset"}))
+def cmd_ros2(*args):
+    """Run any ros2 command on the robot Pi directly."""
+    ros2_cmd = " ".join(args)
+    full_cmd = f"cd /home/ws/ugv_ws && source install/setup.bash && {ros2_cmd}"
+    stdout, stderr, rc = ssh(full_cmd, timeout=15)
+    print(json.dumps({"ok": rc == 0, "stdout": stdout, "stderr": stderr, "returncode": rc}))
 
 
 COMMANDS = {
-    "status":   (cmd_status,   0),
-    "move":     (cmd_move,     2),
-    "move_vel": (cmd_move_vel, 4),
-    "stop":     (cmd_stop,     0),
-    "joint":    (cmd_joint,    2),
-    "capture":  (cmd_capture,  None),  # 0 or 1 arg
-    "reset":    (cmd_reset,    0),
+    "status":  (cmd_status, 0),
+    "move":    (cmd_move,   3),   # vx vyaw duration
+    "stop":    (cmd_stop,   0),
+    "joint":   (cmd_joint,  2),
+    "capture": (cmd_capture, None),
+    "ros2":    (cmd_ros2,   None),  # any number of args
 }
 
 if __name__ == "__main__":

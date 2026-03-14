@@ -1,46 +1,36 @@
 ---
 name: cyberwave
-description: UGV Beast robot control via Cyberwave. Activate when user mentions robot, UGV, Beast, drive, move, steer, joint, or explore.
+description: UGV Beast robot control via Cyberwave and ROS2. Activate when user mentions robot, UGV, Beast, drive, move, turn, camera, joint, explore, or any robot action.
 ---
 
 # Cyberwave — UGV Beast Control
 
-Control the UGV Beast ground vehicle via Cyberwave digital twin (`9b4a8188...`).
-Supports keyboard-style teleoperation and individual joint control.
+Control the UGV Beast ground vehicle. Movement is sent via SSH to the robot's Raspberry Pi ROS2 stack (`/cmd_vel` topic). Camera and joint control use the Cyberwave SDK.
 
 **Controller:** `$HOME/PetProjects/robotics-hackathon/robot_controller.py`
-**Required env:** `CYBERWAVE_TWIN_ID`, `CYBERWAVE_ENVIRONMENT_ID`
+**Required env:** `CYBERWAVE_TWIN_ID`, `CYBERWAVE_ENVIRONMENT_ID`, `ROBOT_HOST`
 
-All commands return JSON. Always confirm actions in plain English.
-
-> **IMPORTANT:** Call `robot_controller.py` directly as an executable — do NOT invoke it via `python3`. Do NOT check Python versions. Do NOT assume the environment is broken based on prior messages — always run the command and report the actual output.
+> **IMPORTANT:** Call `robot_controller.py` directly as an executable. Do NOT invoke via `python3`. Do NOT check Python versions. Do NOT assume environment is broken — always run and report actual output.
 
 ---
 
 ## Commands
 
-### Status
+### Status (shows SSH reachability + twin info)
 ```
 $HOME/PetProjects/robotics-hackathon/robot_controller.py status
 ```
 
-### Move to position (meters, relative to current position)
+### Move (drive forward/turn via ROS2 cmd_vel)
 ```
-$HOME/PetProjects/robotics-hackathon/robot_controller.py move <x> <y>
+$HOME/PetProjects/robotics-hackathon/robot_controller.py move <vx> <vyaw> <duration_seconds>
 ```
-- `x`: forward/backward in meters, positive = forward
-- `y`: left/right in meters, positive = left
-- Example — move forward 1 meter: `move 1.0 0`
-- Example — move right 0.5 meters: `move 0 -0.5`
-
-### Drive (velocity-based teleop)
-```
-$HOME/PetProjects/robotics-hackathon/robot_controller.py move_vel <vx> <vy> <vyaw> <duration_seconds>
-```
-- `vx`: forward/backward (m/s), positive = forward
-- `vy`: left/right (m/s), positive = left
-- `vyaw`: rotation rate (rad/s), positive = turn left
-- Example — drive forward 1 m/s for 2 seconds: `move_vel 1.0 0 0 2`
+- `vx`: forward speed in m/s (positive = forward, negative = backward)
+- `vyaw`: rotation in rad/s (positive = turn left, negative = turn right)
+- `duration`: seconds to drive
+- Forward 1 meter at 0.3 m/s ≈ `move 0.3 0 3`
+- Turn left: `move 0 0.5 2`
+- Turn right: `move 0 -0.5 2`
 
 ### Stop
 ```
@@ -51,34 +41,52 @@ $HOME/PetProjects/robotics-hackathon/robot_controller.py stop
 ```
 $HOME/PetProjects/robotics-hackathon/robot_controller.py joint <joint_name> <degrees>
 ```
-Available joints:
 - `pt_base_link_to_pt_link1` — camera pan (left/right)
 - `pt_link1_to_pt_link2` — camera tilt (up/down)
-- `left_down_wheel_link_joint`, `left_up_wheel_link_joint` — left wheels
-- `right_down_wheel_link_joint`, `right_up_wheel_link_joint` — right wheels
 
 ### Capture camera frame
 ```
 $HOME/PetProjects/robotics-hackathon/robot_controller.py capture
 ```
-Returns `{"ok": true, "path": "/tmp/ugv_frame_<timestamp>.jpg"}`. Read the image at that path to see what the robot sees.
+Returns `{"ok": true, "path": "/tmp/ugv_frame_<timestamp>.jpg"}`. Read the image to describe what the robot sees.
 
-### Reset to origin
+### Run any ROS2 command on the robot
 ```
-$HOME/PetProjects/robotics-hackathon/robot_controller.py reset
+$HOME/PetProjects/robotics-hackathon/robot_controller.py ros2 <ros2_command...>
 ```
+Examples:
+- `robot_controller.py ros2 ros2 topic list`
+- `robot_controller.py ros2 ros2 topic echo /cmd_vel --once`
+- `robot_controller.py ros2 ros2 run ugv_tools keyboard_ctrl`
+
+---
+
+## Enriching the controller
+
+If a user asks for a new robot capability that `robot_controller.py` doesn't support yet, you can add it:
+
+1. Read the current controller: `cat $HOME/PetProjects/robotics-hackathon/robot_controller.py`
+2. Add a new `cmd_<name>` function following the existing pattern
+3. Register it in the `COMMANDS` dict
+4. Test it with `$HOME/PetProjects/robotics-hackathon/robot_controller.py <new_command>`
+5. Commit and push: `cd $HOME/PetProjects/robotics-hackathon && git add robot_controller.py && git commit -m "add <command> command" && git push`
+
+ROS2 commands available on the robot Pi:
+- `ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "..."` — velocity control
+- `ros2 topic list` — list all active topics
+- `ros2 run ugv_tools keyboard_ctrl` — start keyboard control node
 
 ---
 
 ## Explore and Describe
 
-When the user asks the robot to **explore**, **look around**, or **describe what it sees**, follow this loop:
+When the user asks to **explore**, **look around**, or **describe what the robot sees**:
 
-1. For each yaw angle in `[0, 60, 120, 180, 240, 300]`:
-   a. `move_vel 0 0 0.5 2` — rotate to face that direction
-   b. `capture` — grab a frame
-   c. Read the saved image file and describe what you see (objects, layout, notable features)
-   d. If the user asked to find something specific — stop and report immediately if found
-2. After the full sweep, summarize the area in plain English
-
-Keep descriptions concise (1–2 sentences per angle). End with an overall summary.
+1. `move 0 0 0` (ensure stopped)
+2. For each angle in `[0°, 60°, 120°, 180°, 240°, 300°]`:
+   a. Pan camera: `joint pt_base_link_to_pt_link1 <angle>`
+   b. `capture` — grab frame
+   c. Read saved image and describe what you see (1–2 sentences)
+   d. If user asked to find something specific — stop and report if found
+3. Reset camera: `joint pt_base_link_to_pt_link1 0`
+4. Summarize the full scene
